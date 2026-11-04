@@ -1,0 +1,17 @@
+{
+  "name": "candy-cab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Candy Cab — cab business management (React + Express + PostgreSQL)",
+  "scripts": {
+    "setup": "npm --prefix server install && npm --prefix client install",
+    "db:up": "docker compose up -d db",
+    "docker:up": "docker compose up -d --build",
+    "docker:logs": "docker compose logs -f",
+    "db:down": "docker compose down",
+    "db:reset": "npm --prefix server run db:reset",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix client run dev",
+    "check": "npm --prefix server run check && npm --prefix client run lint && npm --prefix client run build"
+  }
+}

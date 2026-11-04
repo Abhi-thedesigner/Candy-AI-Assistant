@@ -1,0 +1,60 @@
+# Candy Cab — full stack in Docker.
+#   docker compose up -d --build   →  http://localhost:4000
+# Optional overrides go in a root .env file (see .env.example).
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: candycab-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-candycab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-candycab_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-candycab}
+      TZ: ${APP_TIMEZONE:-Asia/Kolkata}
+    ports:
+      # Only reachable from this computer; used by `npm run dev:api` outside Docker.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - candycab_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-candycab} -d ${POSTGRES_DB:-candycab}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    container_name: candycab-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 5055
+      NODE_ENV: production
+      CORS_ORIGIN: http://localhost:4000
+      TRUST_PROXY: 1
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Kolkata}
+      TZ: ${APP_TIMEZONE:-Asia/Kolkata}
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-candycab}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-candycab_dev_password}
+      PGDATABASE: ${POSTGRES_DB:-candycab}
+    # Not published: only the web container talks to the API.
+    expose:
+      - "5055"
+
+  web:
+    build: ./client
+    container_name: candycab-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "4000:80"
+
+volumes:
+  candycab_pgdata:
